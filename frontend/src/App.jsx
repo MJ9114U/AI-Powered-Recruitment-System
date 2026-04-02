@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ApplicantDashboard from './pages/ApplicantDashboard';
 import HRDashboard from './pages/HRDashboard';
+import HRJobs from './pages/HRJobs';
 import AdminDashboard from './pages/AdminDashboard';
 
 // --- Auth Context ---
@@ -144,13 +145,22 @@ const App = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/applicant/*" element={
+          <Route path="/applicant" element={
             <ProtectedRoute allowedRoles={['applicant']}><DashboardWrapper><ApplicantDashboard /></DashboardWrapper></ProtectedRoute>
           } />
-          <Route path="/hr/*" element={
+          <Route path="/hr" element={
             <ProtectedRoute allowedRoles={['hr']}><DashboardWrapper><HRDashboard /></DashboardWrapper></ProtectedRoute>
           } />
-          <Route path="/admin/*" element={
+          <Route path="/hr/jobs" element={
+            <ProtectedRoute allowedRoles={['hr']}><DashboardWrapper><HRJobs /></DashboardWrapper></ProtectedRoute>
+          } />
+          <Route path="/hr/jobs/:jobId" element={
+            <ProtectedRoute allowedRoles={['hr']}><DashboardWrapper><HRDashboard /></DashboardWrapper></ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={['admin']}><DashboardWrapper><AdminDashboard /></DashboardWrapper></ProtectedRoute>
+          } />
+          <Route path="/admin/logs" element={
             <ProtectedRoute allowedRoles={['admin']}><DashboardWrapper><AdminDashboard /></DashboardWrapper></ProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/login" />} />

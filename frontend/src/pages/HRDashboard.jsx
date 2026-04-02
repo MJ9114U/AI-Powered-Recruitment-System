@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useParams } from 'react-router-dom';
 import { Users, FileText, BarChart3, Search, Filter, Plus, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
 import { hrService } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -7,6 +8,8 @@ const HRDashboard = () => {
     const [applicants, setApplicants] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [selectedJob, setSelectedJob] = useState(null);
+    const [searchParams] = useSearchParams();
+    const { jobId } = useParams();
     const [loading, setLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -23,9 +26,19 @@ const HRDashboard = () => {
             try {
                 const resJobs = await hrService.getJobs();
                 setJobs(resJobs.data);
-                if (resJobs.data.length > 0) {
-                    setSelectedJob(resJobs.data[0].id);
-                    const resApps = await hrService.getApplicants(resJobs.data[0].id);
+
+                const jobParam = parseInt(jobId ?? '', 10);
+                const queryJobId = parseInt(searchParams.get('jobId') ?? '', 10);
+                const defaultJob = resJobs.data[0];
+                const selectedJobId = (!Number.isNaN(jobParam) && resJobs.data.some((job) => job.id === jobParam))
+                    ? jobParam
+                    : (!Number.isNaN(queryJobId) && resJobs.data.some((job) => job.id === queryJobId))
+                        ? queryJobId
+                        : defaultJob?.id;
+
+                if (selectedJobId) {
+                    setSelectedJob(selectedJobId);
+                    const resApps = await hrService.getApplicants(selectedJobId);
                     setApplicants(resApps.data);
                 }
             } catch (err) {
@@ -34,7 +47,7 @@ const HRDashboard = () => {
             setLoading(false);
         };
         fetchData();
-    }, []);
+    }, [searchParams]);
 
     const handleCreateJob = async () => {
         if (!newJobTitle || !newJobDescription || !newJobRequirements) {

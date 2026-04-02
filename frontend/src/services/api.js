@@ -4,9 +4,6 @@ const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Interceptor for Auth
@@ -21,6 +18,7 @@ apiClient.interceptors.request.use((config) => {
 export const authService = {
   login: (username, password) => {
     const params = new URLSearchParams();
+    params.append('grant_type', 'password');
     params.append('username', username);
     params.append('password', password);
     return apiClient.post('/auth/login', params, {
@@ -32,9 +30,7 @@ export const authService = {
 
 export const applicantService = {
   apply: (jobId, formData) => {
-    return apiClient.post(`/applicant/apply/${jobId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return apiClient.post(`/applicant/apply/${jobId}`, formData);
   },
   getStatus: () => apiClient.get('/applicant/status'),
 };

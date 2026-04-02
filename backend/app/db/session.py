@@ -1,14 +1,18 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from pathlib import Path
 import os
 
 # Database connection URL
-# Default to SQLite for easy local setup, but can be changed to PostgreSQL via environment variables
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./aris.db")
+# Default to SQLite in the backend folder for predictable local setup.
+backend_dir = Path(__file__).resolve().parents[1]
+default_db_path = backend_dir / "aris.db"
+default_db_url = f"sqlite:///{default_db_path.as_posix()}"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", default_db_url)
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
+    SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {}
 )
 

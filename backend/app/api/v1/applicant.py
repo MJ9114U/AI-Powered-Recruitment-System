@@ -77,8 +77,8 @@ async def apply_job(
     new_app = Application(
         applicant_id=current_user.id,
         job_id=job_id,
-        resume_path=resume_path,
-        video_path=video_path,
+        resume_path=str(resume_path),
+        video_path=str(video_path) if video_path else None,
         scores=scores_breakdown,
         status="pending",
         ai_feedback=". ".join(feedback_parts)

@@ -44,7 +44,9 @@ const ApplicantDashboard = () => {
             const res = await applicantService.getStatus();
             setApplications(res.data);
         } catch (err) {
-            alert("Application failed. Ensure backend is running.");
+            console.error('Applicant upload error:', err.response || err);
+            const message = err.response?.data?.detail || err.response?.data?.message || 'Application failed. Ensure backend is running.';
+            alert(message);
         }
         setUploading(false);
     };

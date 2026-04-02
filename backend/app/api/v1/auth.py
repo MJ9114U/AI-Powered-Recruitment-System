@@ -48,4 +48,4 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         )
     
     access_token = create_access_token(data={"sub": user.username, "role": user.role})
-    return {"access_token": access_token, "token_type": "bearer", "role": user.role}
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role if isinstance(user.role, str) else user.role.value}
