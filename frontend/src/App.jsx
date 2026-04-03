@@ -1,6 +1,8 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, FileText, Video, Settings, LogOut, Briefcase, BarChart3, ShieldCheck } from 'lucide-react';
+import { authService } from './services/api';
+import { readAuth, setAuth, clearAuth } from './services/authStorage';
 
 // --- Page Imports ---
 import Login from './pages/Login';
@@ -15,27 +17,53 @@ import Profile from './pages/Profile';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const initial = readAuth();
+  const [user, setUser] = useState(initial);
+  const [loading, setLoading] = useState(() => !!(initial?.token && !initial?.role));
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    if (token) {
-      setUser({ token, role });
-    }
-    setLoading(false);
+    let cancelled = false;
+    const run = async () => {
+      const stored = readAuth();
+      if (!stored?.token) {
+        if (!cancelled) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+      if (stored.role) {
+        if (!cancelled) {
+          setUser(stored);
+          setLoading(false);
+        }
+        return;
+      }
+      try {
+        const res = await authService.getProfile();
+        let r = res.data?.role;
+        const role = (typeof r === 'string' ? r : String(r || '')).toLowerCase().trim();
+        if (role) setAuth(stored.token, role);
+        if (!cancelled) setUser({ token: stored.token, role: role || null });
+      } catch {
+        clearAuth();
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
   }, []);
 
   const login = (token, role) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('role', role);
-    setUser({ token, role });
+    const r = role ? String(role).toLowerCase().trim() : '';
+    setAuth(token, r);
+    setUser({ token, role: r });
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
+    clearAuth();
     setUser(null);
   };
 
@@ -52,8 +80,11 @@ export const useAuth = () => useContext(AuthContext);
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
-  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" />;
+  if (!user?.token) return <Navigate to="/login" replace />;
+  const role = String(user.role || '').toLowerCase();
+  if (allowedRoles && !allowedRoles.map((x) => String(x).toLowerCase()).includes(role)) {
+    return <Navigate to="/" replace />;
+  }
   return children;
 };
 

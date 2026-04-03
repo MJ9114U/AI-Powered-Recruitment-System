@@ -96,7 +96,9 @@ const ApplicantDashboard = () => {
                                         }}>
                                             {app.status.toUpperCase()}
                                         </span>
-                                        <p style={{ fontSize: '14px', fontWeight: '700', marginTop: '8px', color: 'var(--accent)' }}>AI Score: {app.score}%</p>
+                                        <p style={{ fontSize: '14px', fontWeight: '700', marginTop: '8px', color: 'var(--accent)' }}>
+                                            AI Score: {app.score != null && app.score !== '' ? `${Number(app.score).toFixed(1)}%` : '—'}
+                                        </p>
                                     </div>
                                 </div>
                             ))}

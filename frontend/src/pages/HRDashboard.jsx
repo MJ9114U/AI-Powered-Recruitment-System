@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
-import { Users, FileText, BarChart3, Search, Filter, Plus, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
+import { Users, BarChart3, Search, Filter, Plus, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
 import { hrService } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -40,6 +40,9 @@ const HRDashboard = () => {
                     setSelectedJob(selectedJobId);
                     const resApps = await hrService.getApplicants(selectedJobId);
                     setApplicants(resApps.data);
+                } else {
+                    setSelectedJob(null);
+                    setApplicants([]);
                 }
             } catch (err) {
                 console.error("Error fetching HR data", err);
@@ -47,7 +50,7 @@ const HRDashboard = () => {
             setLoading(false);
         };
         fetchData();
-    }, [searchParams]);
+    }, [searchParams, jobId]);
 
     const handleCreateJob = async () => {
         if (!newJobTitle || !newJobDescription || !newJobRequirements) {
@@ -107,6 +110,11 @@ const HRDashboard = () => {
         const scoreB = Number(b?.scores?.total_score ?? 0);
         return scoreB - scoreA;
     });
+
+    const chartData = sortedApplicants.slice(0, 5).map((a) => ({
+        name: (a?.candidate_name || 'Candidate').slice(0, 18) + ((a?.candidate_name || '').length > 18 ? '…' : ''),
+        ai_score: Number(a?.scores?.total_score ?? 0),
+    }));
 
     return (
         <div className="animate-fade">
@@ -173,8 +181,12 @@ const HRDashboard = () => {
                                 key={job.id} 
                                 onClick={async () => {
                                     setSelectedJob(job.id);
-                                    const res = await hrService.getApplicants(job.id);
-                                    setApplicants(res.data);
+                                    try {
+                                        const res = await hrService.getApplicants(job.id);
+                                        setApplicants(res.data);
+                                    } catch (e) {
+                                        console.error(e);
+                                    }
                                 }}
                                 style={{
                                     padding: '16px', borderRadius: '12px', border: '1px solid var(--surface-border)',
@@ -197,21 +209,18 @@ const HRDashboard = () => {
                     <div className="glass-card" style={{ height: '300px' }}>
                         <h4 style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>Candidate Score Comparison</h4>
                         <ResponsiveContainer width="100%" height="85%">
-                            <BarChart data={sortedApplicants.slice(0, 5)}>
+                            <BarChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                <XAxis dataKey="candidate_name" stroke="#94a3b8" />
-                                <YAxis stroke="#94a3b8" />
+                                <XAxis dataKey="name" stroke="#94a3b8" />
+                                <YAxis stroke="#94a3b8" domain={[0, 100]} />
                                 <Tooltip 
                                     contentStyle={{ background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: '8px' }}
                                     itemStyle={{ color: 'var(--primary)' }}
                                 />
-                                <Bar dataKey={(entry) => entry?.scores?.total_score ?? 0} name="AI Score">
-                                    {filteredApplicants.slice(0, 5).map((entry, index) => {
-                                        const score = entry?.scores?.total_score ?? 0;
-                                        return (
-                                            <Cell key={`cell-${index}`} fill={score > 80 ? 'var(--success)' : 'var(--primary)'} />
-                                        );
-                                    })}
+                                <Bar dataKey="ai_score" name="AI Score" radius={[6, 6, 0, 0]}>
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.ai_score > 80 ? 'var(--success)' : 'var(--primary)'} />
+                                    ))}
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>

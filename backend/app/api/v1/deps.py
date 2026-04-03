@@ -27,9 +27,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
+def _user_role_key(user: User) -> str:
+    r = user.role
+    if isinstance(r, UserRole):
+        return r.value
+    return str(r).lower().strip() if r is not None else ""
+
 def check_role(role: UserRole):
     def role_checker(current_user: User = Depends(get_current_user)):
-        if current_user.role != role.value and current_user.role != UserRole.ADMIN.value:
+        ur = _user_role_key(current_user)
+        if ur != role.value and ur != UserRole.ADMIN.value:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have enough permissions"

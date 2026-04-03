@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ...db.session import get_db
 from ...models.models import Job, Application, User, UserRole
 from .deps import get_current_user, check_role
@@ -30,12 +31,55 @@ def create_job(job_in: JobCreate, db: Session = Depends(get_db), current_user: U
 def list_my_jobs(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return db.query(Job).filter(Job.created_by == current_user.id).order_by(Job.created_at.desc()).all()
 
+@router.get("/summary")
+def hr_activity_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Aggregates across this HR user's job postings for dashboard monitoring."""
+    jobs_posted = db.query(Job).filter(Job.created_by == current_user.id).count()
+    my_job_ids = [jid for (jid,) in db.query(Job.id).filter(Job.created_by == current_user.id).all()]
+    if not my_job_ids:
+        return {
+            "jobs_posted": 0,
+            "total_applications": 0,
+            "pending_review": 0,
+            "shortlisted": 0,
+            "rejected": 0,
+            "hired": 0,
+            "status_breakdown": {},
+        }
+    status_rows = (
+        db.query(Application.status, func.count(Application.id))
+        .filter(Application.job_id.in_(my_job_ids))
+        .group_by(Application.status)
+        .all()
+    )
+    status_breakdown = {str(s or "unknown"): int(c) for s, c in status_rows}
+    total_applications = sum(status_breakdown.values())
+    return {
+        "jobs_posted": jobs_posted,
+        "total_applications": total_applications,
+        "pending_review": status_breakdown.get("pending", 0),
+        "shortlisted": status_breakdown.get("shortlisted", 0),
+        "rejected": status_breakdown.get("rejected", 0),
+        "hired": status_breakdown.get("hired", 0),
+        "status_breakdown": status_breakdown,
+    }
+
 @router.get("/applications/{job_id}")
 def view_ranked_applicants(job_id: int, db: Session = Depends(get_db)):
     # Fetch all applications for a job and rank them by scores.total_score
     apps = db.query(Application).filter(Application.job_id == job_id).all()
-    # Sort by total_score descending
-    sorted_apps = sorted(apps, key=lambda x: x.scores.get("total_score", 0), reverse=True)
+
+    def _total_score(app: Application) -> float:
+        s = app.scores
+        if not s or not isinstance(s, dict):
+            return 0.0
+        v = s.get("total_score", 0)
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return 0.0
+
+    sorted_apps = sorted(apps, key=_total_score, reverse=True)
     
     # Format for HR
     formatted = []

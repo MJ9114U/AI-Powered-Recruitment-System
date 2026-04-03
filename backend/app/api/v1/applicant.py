@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 from pathlib import Path
-import os, uuid
+import os, uuid, json
 from ...db.session import get_db
 from ...models.models import Application, Job, User
 from .deps import get_current_user, check_role, UserRole
@@ -12,6 +12,28 @@ from ...services.video_engine import video_engine
 from ...services.scoring_engine import scoring_engine
 
 router = APIRouter()
+
+def _stored_scores_dict(raw):
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except Exception:
+            return None
+    return raw if isinstance(raw, dict) else None
+
+def _total_and_rec_from_stored(raw):
+    d = _stored_scores_dict(raw)
+    if not d:
+        return None, None, None
+    ts = d.get("total_score")
+    try:
+        total = round(float(ts), 2) if ts is not None else None
+    except (TypeError, ValueError):
+        total = None
+    rec = d.get("recommendation")
+    return total, rec, d
 
 BASE_DIR = Path(__file__).resolve().parents[3].parent
 UPLOAD_DIR = BASE_DIR / "data" / "resumes"
@@ -56,17 +78,19 @@ async def apply_job(
     match_data = matching_engine.match_skills(jd_requirements, resume_data.get("skills", []))
     
     # 3. Video Analysis (Simulated)
-    if video_path:
+    has_video = video_path is not None
+    if has_video:
         video_data = video_engine.analyze_video(str(video_path))
     else:
         video_data = {"clarity": 0, "confidence": 0}
 
-    # 4. Scoring Engine
+    # 4. Scoring Engine (no video → video weights reallocated to resume + skills)
     scores_breakdown = scoring_engine.calculate_final_score(
         resume_score=matching_engine.compute_similarity(job.description, resume_data.get("raw_text_preview", "")),
         skill_score=match_data.get("skill_score", 0),
         comm_score=video_data.get("clarity", 0),
-        emotion_score=video_data.get("confidence", 0)
+        emotion_score=video_data.get("confidence", 0),
+        has_video=has_video,
     )
 
     # Create Application
@@ -104,15 +128,16 @@ def list_open_jobs(db: Session = Depends(get_db), current_user: User = Depends(g
 @router.get("/status")
 def get_applications(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     apps = db.query(Application).filter(Application.applicant_id == current_user.id).all()
-    # Simple formatting
     formatted = []
     for a in apps:
+        total, rec, sdict = _total_and_rec_from_stored(a.scores)
         formatted.append({
             "id": a.id,
             "job_title": a.job.title,
             "status": a.status,
-            "score": a.scores.get("total_score"),
-            "recommendation": a.scores.get("recommendation"),
+            "score": total,
+            "recommendation": rec,
+            "scoring_mode": (sdict or {}).get("scoring_mode"),
             "feedback": a.ai_feedback,
             "created_at": a.created_at
         })

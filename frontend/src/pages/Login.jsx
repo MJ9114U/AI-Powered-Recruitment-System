@@ -1,20 +1,34 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { authService } from '../services/api';
 import { Mail, Lock, User, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
-    const { login } = useAuth();
+    const { login, user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [credentials, setCredentials] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    if (authLoading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--background)', color: 'var(--text-muted)' }}>
+                Loading...
+            </div>
+        );
+    }
+
+    if (user?.token && user?.role) {
+        if (user.role === 'admin') return <Navigate to="/admin" replace />;
+        if (user.role === 'hr') return <Navigate to="/hr" replace />;
+        return <Navigate to="/applicant" replace />;
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setSubmitting(true);
         setError('');
         try {
             const res = await authService.login(credentials.username, credentials.password);
@@ -28,7 +42,7 @@ const Login = () => {
         } catch (err) {
             setError('Account verification failed. Check credentials.');
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
@@ -81,8 +95,8 @@ const Login = () => {
                             </button>
                         </div>
                     </div>
-                    <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                        {loading ? 'Entering...' : 'Sign In'}
+                    <button type="submit" disabled={submitting} className="btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        {submitting ? 'Entering...' : 'Sign In'}
                     </button>
                 </form>
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken } from './authStorage';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 
@@ -6,9 +7,9 @@ const apiClient = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Interceptor for Auth
+// Interceptor for Auth (per-tab session via sessionStorage)
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -40,6 +41,7 @@ export const applicantService = {
 export const hrService = {
   createJob: (jobData) => apiClient.post('/hr/jobs', jobData),
   getJobs: () => apiClient.get('/hr/jobs'),
+  getSummary: () => apiClient.get('/hr/summary'),
   getApplicants: (jobId) => apiClient.get(`/hr/applications/${jobId}`),
   updateStatus: (appId, status) => apiClient.patch(`/hr/applications/${appId}/status`, null, { params: { status } }),
 };
@@ -47,6 +49,7 @@ export const hrService = {
 export const adminService = {
   getMetrics: () => apiClient.get('/admin/metrics'),
   getLogs: () => apiClient.get('/admin/logs'),
+  getHrRecruiters: () => apiClient.get('/admin/hr-recruiters'),
 };
 
 export default apiClient;
