@@ -9,6 +9,7 @@ import ApplicantDashboard from './pages/ApplicantDashboard';
 import HRDashboard from './pages/HRDashboard';
 import HRJobs from './pages/HRJobs';
 import AdminDashboard from './pages/AdminDashboard';
+import Profile from './pages/Profile';
 
 // --- Auth Context ---
 const AuthContext = createContext(null);
@@ -71,6 +72,7 @@ const Sidebar = () => {
       </div>
 
       <div style={{ flex: 1 }}>
+        <Link to="/profile" className="nav-link"><Users size={20} /> Profile</Link>
         {role === 'applicant' && (
           <>
             <Link to="/applicant" className="nav-link"><LayoutDashboard size={20} /> Dashboard</Link>
@@ -156,8 +158,9 @@ const App = () => {
           } />
           <Route path="/hr/jobs/:jobId" element={
             <ProtectedRoute allowedRoles={['hr']}><DashboardWrapper><HRDashboard /></DashboardWrapper></ProtectedRoute>
-          } />
-          <Route path="/admin" element={
+          } />          <Route path="/profile" element={
+            <ProtectedRoute><DashboardWrapper><Profile /></DashboardWrapper></ProtectedRoute>
+          } />          <Route path="/admin" element={
             <ProtectedRoute allowedRoles={['admin']}><DashboardWrapper><AdminDashboard /></DashboardWrapper></ProtectedRoute>
           } />
           <Route path="/admin/logs" element={

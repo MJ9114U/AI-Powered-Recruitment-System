@@ -1,10 +1,11 @@
 import sqlite3
 from datetime import datetime
 import json
-import os
+from pathlib import Path
 from backend.app.core.security import get_password_hash
 
-DB_PATH = "aris.db"
+# Always use backend/aris.db so seeding matches app runtime DB.
+DB_PATH = Path(__file__).resolve().parent / "aris.db"
 
 def seed_data():
     conn = sqlite3.connect(DB_PATH)
@@ -16,13 +17,15 @@ def seed_data():
     cursor.execute("DELETE FROM applications")
     cursor.execute("DELETE FROM audit_logs")
 
-    # Add Users (Password: password123)
-    pwd_hash = get_password_hash("password123")
-    users = [
-        (1, 'admin', 'admin@aris.ai', pwd_hash, 'admin'),
-        (2, 'hr', 'hr@aris.ai', pwd_hash, 'hr'),
-        (3, 'applicant', 'applicant@example.com', pwd_hash, 'applicant')
+    # Add Users
+    users_info = [
+        (1, 'admin', 'admin@aris.ai', 'admin', 'admin'),
+        (2, 'hr', 'hr@aris.ai', 'hr', 'hr'),
+        (3, 'applicant', 'applicant@example.com', 'applicant', 'applicant')
     ]
+    users = []
+    for uid, uname, email, raw_pwd, role in users_info:
+        users.append((uid, uname, email, get_password_hash(raw_pwd), role))
     cursor.executemany("INSERT INTO users VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)", users)
 
     # Add Jobs

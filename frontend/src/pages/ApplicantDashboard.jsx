@@ -4,26 +4,39 @@ import { applicantService } from '../services/api';
 
 const ApplicantDashboard = () => {
     const [applications, setApplications] = useState([]);
+    const [jobs, setJobs] = useState([]);
+    const [selectedJobId, setSelectedJobId] = useState('');
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [includeVideo, setIncludeVideo] = useState(false);
 
     useEffect(() => {
-        const fetchStatus = async () => {
+        const fetchData = async () => {
             setLoading(true);
             try {
-                const res = await applicantService.getStatus();
-                setApplications(res.data);
+                const [statusRes, jobsRes] = await Promise.all([
+                    applicantService.getStatus(),
+                    applicantService.getJobs(),
+                ]);
+                setApplications(statusRes.data);
+                setJobs(jobsRes.data);
+                if (jobsRes.data.length > 0) {
+                    setSelectedJobId(String(jobsRes.data[0].id));
+                }
             } catch (err) {
                 console.error("Error fetching status", err);
             }
             setLoading(false);
         };
-        fetchStatus();
+        fetchData();
     }, []);
 
     const handleApply = async (e) => {
         e.preventDefault();
+        if (!selectedJobId) {
+            alert("Please select a job before applying.");
+            return;
+        }
         setUploading(true);
         const formData = new FormData();
         formData.append("resume", e.target.resume.files[0]);
@@ -38,7 +51,7 @@ const ApplicantDashboard = () => {
         }
         
         try {
-            await applicantService.apply(1, formData);
+            await applicantService.apply(Number(selectedJobId), formData);
             alert("Application submitted successfully!");
             // Refresh
             const res = await applicantService.getStatus();
@@ -103,6 +116,25 @@ const ApplicantDashboard = () => {
                     </h3>
                     <form onSubmit={handleApply}>
                         <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: 'var(--text-muted)' }}>Select Job</label>
+                            <select
+                                value={selectedJobId}
+                                onChange={(e) => setSelectedJobId(e.target.value)}
+                                required
+                                style={{ width: '100%', padding: '10px', background: 'var(--background)', border: '1px solid var(--surface-border)', borderRadius: '8px', color: 'white' }}
+                            >
+                                {jobs.length === 0 ? (
+                                    <option value="">No open jobs available</option>
+                                ) : (
+                                    jobs.map((job) => (
+                                        <option key={job.id} value={job.id}>
+                                            {job.title}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '20px' }}>
                             <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: 'var(--text-muted)' }}>Resume (PDF)</label>
                             <input type="file" name="resume" accept=".pdf" required style={{ width: '100%', padding: '10px', background: 'var(--background)', border: '1px dashed var(--surface-border)', borderRadius: '8px', color: 'white' }} />
                         </div>
@@ -124,7 +156,7 @@ const ApplicantDashboard = () => {
                                 <input type="file" name="video" accept="video/*" style={{ width: '100%', padding: '10px', background: 'var(--background)', border: '1px dashed var(--surface-border)', borderRadius: '8px', color: 'white' }} />
                             </div>
                         )}
-                        <button type="submit" disabled={uploading} className="btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        <button type="submit" disabled={uploading || jobs.length === 0} className="btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                             {uploading ? "Analyzing..." : <><Upload size={18} /> Submit Application</>}
                         </button>
                     </form>

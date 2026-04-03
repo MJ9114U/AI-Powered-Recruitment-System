@@ -87,6 +87,20 @@ async def apply_job(
     db.commit()
     return {"message": "Application submitted", "application_id": new_app.id, "analysis": scores_breakdown}
 
+@router.get("/jobs")
+def list_open_jobs(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    jobs = db.query(Job).filter(Job.status == "open").order_by(Job.created_at.desc()).all()
+    return [
+        {
+            "id": job.id,
+            "title": job.title,
+            "description": job.description,
+            "requirements": job.requirements,
+            "created_at": job.created_at
+        }
+        for job in jobs
+    ]
+
 @router.get("/status")
 def get_applications(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     apps = db.query(Application).filter(Application.applicant_id == current_user.id).all()

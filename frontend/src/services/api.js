@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://ai-powered-recruitment-system-college.onrender.com/api/v1';
+const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -26,9 +26,11 @@ export const authService = {
     });
   },
   register: (userData) => apiClient.post('/auth/register', userData),
+  getProfile: () => apiClient.get('/auth/me'),
 };
 
 export const applicantService = {
+  getJobs: () => apiClient.get('/applicant/jobs'),
   apply: (jobId, formData) => {
     return apiClient.post(`/applicant/apply/${jobId}`, formData);
   },

@@ -6,7 +6,7 @@ import os
 
 # Database connection URL
 # Default to SQLite in the backend folder for predictable local setup.
-backend_dir = Path(__file__).resolve().parents[1]
+backend_dir = Path(__file__).resolve().parents[2]
 default_db_path = backend_dir / "aris.db"
 default_db_url = f"sqlite:///{default_db_path.as_posix()}"
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", default_db_url)
