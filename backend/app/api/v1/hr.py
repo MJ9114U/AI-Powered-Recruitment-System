@@ -28,7 +28,7 @@ def create_job(job_in: JobCreate, db: Session = Depends(get_db), current_user: U
 
 @router.get("/jobs")
 def list_my_jobs(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(Job).filter(Job.created_by == current_user.id).all()
+    return db.query(Job).filter(Job.created_by == current_user.id).order_by(Job.created_at.desc()).all()
 
 @router.get("/applications/{job_id}")
 def view_ranked_applicants(job_id: int, db: Session = Depends(get_db)):
