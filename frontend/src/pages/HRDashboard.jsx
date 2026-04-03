@@ -102,6 +102,12 @@ const HRDashboard = () => {
         return name.includes(term) || email.includes(term);
     });
 
+    const sortedApplicants = [...filteredApplicants].sort((a, b) => {
+        const scoreA = Number(a?.scores?.total_score ?? 0);
+        const scoreB = Number(b?.scores?.total_score ?? 0);
+        return scoreB - scoreA;
+    });
+
     return (
         <div className="animate-fade">
             <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -191,7 +197,7 @@ const HRDashboard = () => {
                     <div className="glass-card" style={{ height: '300px' }}>
                         <h4 style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>Candidate Score Comparison</h4>
                         <ResponsiveContainer width="100%" height="85%">
-                            <BarChart data={filteredApplicants.slice(0, 5)}>
+                            <BarChart data={sortedApplicants.slice(0, 5)}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                                 <XAxis dataKey="candidate_name" stroke="#94a3b8" />
                                 <YAxis stroke="#94a3b8" />
@@ -241,7 +247,7 @@ const HRDashboard = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredApplicants.length > 0 ? filteredApplicants.map((app, index) => (
+                                {sortedApplicants.length > 0 ? sortedApplicants.map((app, index) => (
                                     <tr key={app.id} style={{ borderBottom: '1px solid var(--surface-border)' }}>
                                         <td style={{ padding: '16px', fontWeight: '700', color: 'var(--text-muted)' }}>#{index + 1}</td>
                                         <td style={{ padding: '16px' }}>
