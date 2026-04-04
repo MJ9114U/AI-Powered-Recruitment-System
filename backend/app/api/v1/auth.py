@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import timedelta
 from ...db.session import get_db
-from ...models.models import User, UserRole, Job, Application
+from ...models.models import User, UserRole, Job, Application, AuditLog
 from ...core.security import verify_password, get_password_hash, create_access_token
 from .deps import get_current_user
 from pydantic import BaseModel, EmailStr
@@ -43,7 +43,12 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     )
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)
+    db.add(AuditLog(
+        user_id=new_user.id,
+        action="USER_REGISTER",
+        details=f"User {new_user.username} registered"
+    ))
+    db.commit()
     return {"message": "User registered successfully", "user_id": new_user.id}
 
 @router.post("/login")
@@ -57,6 +62,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         )
     
     access_token = create_access_token(data={"sub": user.username, "role": user.role})
+    db.add(AuditLog(
+        user_id=user.id,
+        action="USER_LOGIN",
+        details=f"User {user.username} logged in"
+    ))
+    db.commit()
     return {"access_token": access_token, "token_type": "bearer", "role": user.role if isinstance(user.role, str) else user.role.value}
 
 @router.get("/me")

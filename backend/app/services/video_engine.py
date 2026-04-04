@@ -26,14 +26,18 @@ class VideoEngine:
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
 
         # OpenAI client for bonus LLM analysis (optional)
-        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            self.openai_client = OpenAI(api_key=openai_key)
+        else:
+            self.openai_client = None
 
         # Filler words for clarity analysis
         self.filler_words = {"um", "uh", "like", "you know", "so", "well", "actually", "basically", "literally"}
 
         self.emotion_model = pipeline(
             "text-classification",
-            model="j-hartmann/emotion-english-distilroberta-base",
+            model="bhadresh-savani/distilbert-base-uncased-emotion",
             return_all_scores=True
         )
     def _extract_audio(self, video_path: str, audio_path: str) -> bool:

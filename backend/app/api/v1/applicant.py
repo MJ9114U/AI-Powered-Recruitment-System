@@ -4,7 +4,7 @@ from typing import Optional
 from pathlib import Path
 import os, uuid, json
 from ...db.session import get_db
-from ...models.models import Application, Job, User
+from ...models.models import Application, Job, User, AuditLog
 from .deps import get_current_user, check_role, UserRole
 from ...services.resume_engine import resume_engine
 from ...services.matching_engine import matching_engine
@@ -108,6 +108,12 @@ async def apply_job(
         ai_feedback=". ".join(feedback_parts)
     )
     db.add(new_app)
+    db.commit()
+    db.add(AuditLog(
+        user_id=current_user.id,
+        action="APPLICATION_SUBMITTED",
+        details=f"User {current_user.username} applied to Job {job_id}"
+    ))
     db.commit()
     return {"message": "Application submitted", "application_id": new_app.id, "analysis": scores_breakdown}
 

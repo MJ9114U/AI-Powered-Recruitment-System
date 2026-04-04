@@ -44,6 +44,8 @@ export const hrService = {
   getSummary: () => apiClient.get('/hr/summary'),
   getApplicants: (jobId) => apiClient.get(`/hr/applications/${jobId}`),
   updateStatus: (appId, status) => apiClient.patch(`/hr/applications/${appId}/status`, null, { params: { status } }),
+  updateJob: (jobId, jobData) => apiClient.patch(`/hr/jobs/${jobId}`, jobData),
+  deleteJob: (jobId) => apiClient.delete(`/hr/jobs/${jobId}`),
 };
 
 export const adminService = {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ClipboardList, Trash2 } from 'lucide-react';
+import { Plus, ClipboardList, Trash2, Pencil } from 'lucide-react';
 import { hrService } from '../services/api';
 
 const HRJobs = () => {
@@ -11,6 +11,11 @@ const HRJobs = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [jobToDelete, setJobToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState(null);
+  const [editFormData, setEditFormData] = useState({ title: '', description: '', requirements: '' });
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -41,6 +46,22 @@ const HRJobs = () => {
       setError('Failed to delete job. Please try again.');
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleEditJob = async (e) => {
+    e.preventDefault();
+    try {
+      setEditLoading(true);
+      const res = await hrService.updateJob(jobToEdit.id, editFormData);
+      setJobs(jobs.map(j => (j.id === jobToEdit.id ? res.data : j)));
+      setShowEditModal(false);
+      setJobToEdit(null);
+    } catch (err) {
+      console.error('Error editing job', err);
+      setError('Failed to edit job. Please try again.');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -85,36 +106,61 @@ const HRJobs = () => {
                   <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Requirements: {job.requirements}</span>
                 </div>
                 <span style={{ position: 'absolute', bottom: '16px', left: '16px', fontSize: '13px', color: 'var(--text-muted)' }}>Posted: {new Date(job.created_at).toLocaleDateString()}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setJobToDelete(job);
-                    setShowDeleteModal(true);
-                  }}
-                  style={{
-                    position: 'absolute',
-                    bottom: '16px',
-                    right: '16px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    zIndex: 10,
-                    outline: '1px solid transparent',
-                    transition: 'outline 0.2s'
-                  }}
-                  onFocus={(e) => { e.target.style.outline = '2px solid var(--error)'; }}
-                  onBlur={(e) => { e.target.style.outline = '1px solid transparent'; }}
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div style={{ position: 'absolute', bottom: '16px', right: '16px', display: 'flex', gap: '8px', zIndex: 10 }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setJobToEdit(job);
+                      setEditFormData({ title: job.title, description: job.description, requirements: job.requirements });
+                      setShowEditModal(true);
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      outline: '1px solid transparent',
+                      transition: 'outline 0.2s'
+                    }}
+                    onFocus={(e) => { e.target.style.outline = '2px solid var(--primary)'; }}
+                    onBlur={(e) => { e.target.style.outline = '1px solid transparent'; }}
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setJobToDelete(job);
+                      setShowDeleteModal(true);
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      outline: '1px solid transparent',
+                      transition: 'outline 0.2s'
+                    }}
+                    onFocus={(e) => { e.target.style.outline = '2px solid var(--error)'; }}
+                    onBlur={(e) => { e.target.style.outline = '1px solid transparent'; }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -123,7 +169,7 @@ const HRJobs = () => {
 
       {showDeleteModal && jobToDelete && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-          <div style={{ width: '100%', maxWidth: '400px', background: 'var(--surface)', borderRadius: '24px', padding: '32px', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '400px', background: 'var(--surface)', borderRadius: '24px', padding: '32px', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ marginBottom: '16px', color: 'var(--error)' }}>Delete Job Posting</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
               Are you sure you want to delete "<strong>{jobToDelete.title}</strong>"?
@@ -143,6 +189,65 @@ const HRJobs = () => {
                 {deleteLoading ? 'Deleting...' : 'Delete'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && jobToEdit && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div style={{ width: '100%', maxWidth: '500px', background: 'var(--surface)', borderRadius: '24px', padding: '32px', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '16px', fontSize: '24px' }}>Edit Job Posting</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px' }}>
+              Updating job requirements or description will automatically recalculate matching scores for all current applications.
+            </p>
+            <form onSubmit={handleEditJob} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Job Title</label>
+                <input
+                  type="text"
+                  required
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--surface-border)', color: 'var(--text)' }}
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Description</label>
+                <textarea
+                  required
+                  rows={4}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--surface-border)', color: 'var(--text)', resize: 'vertical' }}
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Requirements (comma-separated)</label>
+                <input
+                  type="text"
+                  required
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--surface-border)', color: 'var(--text)' }}
+                  value={editFormData.requirements}
+                  onChange={(e) => setEditFormData({...editFormData, requirements: e.target.value})}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowEditModal(false); setJobToEdit(null); }}
+                  style={{ padding: '10px 20px', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--surface-border)', color: 'var(--text)', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  style={{ padding: '10px 20px', borderRadius: '8px', background: 'var(--primary)', border: 'none', color: 'white', cursor: 'pointer', opacity: editLoading ? 0.6 : 1 }}
+                >
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
