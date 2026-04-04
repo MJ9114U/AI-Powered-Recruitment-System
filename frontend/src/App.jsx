@@ -11,6 +11,7 @@ import ApplicantDashboard from './pages/ApplicantDashboard';
 import HRDashboard from './pages/HRDashboard';
 import HRJobs from './pages/HRJobs';
 import AdminDashboard from './pages/AdminDashboard';
+import AuditLog from './pages/AuditLog';
 import Profile from './pages/Profile';
 
 // --- Auth Context ---
@@ -103,7 +104,6 @@ const Sidebar = () => {
       </div>
 
       <div style={{ flex: 1 }}>
-        <Link to="/profile" className="nav-link"><Users size={20} /> Profile</Link>
         {role === 'applicant' && (
           <>
             <Link to="/applicant" className="nav-link"><LayoutDashboard size={20} /> Dashboard</Link>
@@ -121,6 +121,7 @@ const Sidebar = () => {
             <Link to="/admin/logs" className="nav-link"><FileText size={20} /> Audit Logs</Link>
           </>
         )}
+        <Link to="/profile" className="nav-link"><Users size={20} /> Profile</Link>
       </div>
 
       <button onClick={logout} className="logout-btn">
@@ -195,7 +196,7 @@ const App = () => {
             <ProtectedRoute allowedRoles={['admin']}><DashboardWrapper><AdminDashboard /></DashboardWrapper></ProtectedRoute>
           } />
           <Route path="/admin/logs" element={
-            <ProtectedRoute allowedRoles={['admin']}><DashboardWrapper><AdminDashboard /></DashboardWrapper></ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin']}><DashboardWrapper><AuditLog /></DashboardWrapper></ProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/login" />} />
         </Routes>

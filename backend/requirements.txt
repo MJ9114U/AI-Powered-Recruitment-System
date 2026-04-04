@@ -17,3 +17,10 @@ matplotlib
 seaborn
 jinja2
 python-slugify
+openai-whisper
+vaderSentiment
+deepface
+moviepy
+torch
+transformers
+openai
